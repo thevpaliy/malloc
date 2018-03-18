@@ -3,6 +3,118 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+void d_balance(bucket_t* root, bucket_t* node)
+{
+
+}
+
+void rb_delete(bucket_t* root, bucket_t* node)
+{
+
+}
+
+void transplant(bucket_t* root, bucket_t* x , bucket_t* y)
+{
+
+}
+
+void l_rotation(bucket_t* node)
+{
+  if(node->parent != NULL) {
+    bucket_t* parent = node->parent;
+    bucket_t* grandparent = parent->parent;
+    bucket_t* left = node->left;
+    node->parent = grandparent;
+    node->left = parent;
+    parent->right = left;
+    parent->parent = node;
+    if(left != NULL)
+      left->parent = parent;
+    if(grandparent != NULL) {
+      if(grandparent->left == parent)
+        grandparent->left = node;
+      else
+        grandparent->right = node;
+    }
+  }
+}
+
+void r_rotation(bucket_t* node)
+{
+  if(node->parent != NULL) {
+    bucket_t* parent = node->parent;
+    bucket_t* grandparent = parent->parent;
+    bucket_t* right = node->right;
+    parent->parent = node;
+    parent->left = right;
+    node->parent = grandparent;
+    node->right = parent;
+    if(right != NULL)
+      right->parent = parent;
+    if(grandparent != NULL) {
+      if(grandparent->left == parent)
+        grandparent->left = node;
+      else
+        grandparent->right = node;
+    }
+  }
+}
+
+bucket_t* i_balance(bucket_t* root, bucket_t* node)
+{
+  if(root != NULL) {
+    while(node->parent != NULL && node->parent->red) {
+      bucket_t* parent = node->parent;
+      bucket_t* grandparent = parent->parent->parent;
+      if(grandparent == NULL)
+        return root;
+      bucket_t* uncle = grandparent->left != parent
+              ? grandparent->left : grandparent->right;
+      if(uncle == NULL || !uncle->red) {
+        if(grandparent->right != parent) {
+          if(parent->left != node) {
+            l_rotation(node);
+            parent = node;
+          }
+          r_rotation(parent);
+        }else {
+          if(parent->right != node) {
+            r_rotation(node);
+            parent = node;
+          }
+          l_rotation(parent);
+        }
+        parent->red = false;
+        node = parent;
+        root = node->parent != NULL ? root : node;
+      }else {
+        grandparent->red = grandparent->parent != NULL;
+        uncle->red = false;
+        parent->red = false;
+        node = grandparent;
+      }
+    }
+  }
+  return root;
+}
+
+void p_remove(page_t* node)
+{
+  while(node != NULL){
+    page_t* temp = node->next;
+    node->next = NULL;
+  }
+}
+
+void b_remove(bucket_t* node)
+{
+  node->parent = NULL;
+  node->right = NULL;
+  node->left = NULL;
+  p_remove(node->head);
+}
+
+
 bucket_t* create(size_t size)
 {
   bucket_t* bucket = sbrk(sizeof(bucket_t));
@@ -14,16 +126,16 @@ bucket_t* create(size_t size)
   return bucket;
 }
 
-bucket_t* add(bucket_t* root, size_t size, page_t* page)
+bucket_t* add(bucket_t* root, bucket_t* target)
 {
   if(root != NULL) {
     bucket_t* node = root;
     bucket_t* parent = node;
+    size_t size = target->size;
     while(node != NULL) {
       parent = node;
       node = node->size > size ? node->left : node->right;
     }
-    bucket_t* target = create(size);
     if(parent->size < size)
       parent->right = node;
     else
@@ -69,7 +181,7 @@ bucket_t* remove(bucket_t* root, size_t size)
   bucket_t* target = search(root, size);
   if(target != NULL) {
     bucket_t* successor = NULL;
-    if(taget-> left && target->right) {
+    if(target-> left && target->right) {
       successor = target->right;
       while(successor->left)
         successor= successor->left;
@@ -93,104 +205,8 @@ bucket_t* remove(bucket_t* root, size_t size)
     if(successor != NULL)
       successor->parent = target->parent;
     root = root != target ? root : successor;
-    remove(target);
+    b_remove(target);
     d_balance(root, target);
   }
   return root;
-}
-
-void r_rotation(bucket_t* node)
-{
-  if(node->parent != NULL) {
-    bucket_t* parent = node->parent;
-    bucket_t* grandparent = parent->parent;
-    bucekt_t* right = node->right;
-    parent->parent = node;
-    parent->left = right;
-    node->parent = grandparent;
-    node->right = parent;
-    if(right != NULL)
-      right->parent = parent;
-    if(grandparent != NULL) {
-      if(grandparent->left == parent)
-        grandparent->left = node;
-      else
-        grandparent->right = node;
-    }
-  }
-}
-
-bucket_t* i_balance(bucket_t* root, bucket_t* node)
-{
-  if(root != NULL) {
-    while(node->parent != NULL && node->parent->red) {
-      bucket_t* parent = node->parent;
-      bucket_t* grandparent = parent->parent->parent;
-      if(grandparent == NULL)
-        return;
-      bucket_t* uncle = grandparent->left != parent
-              ? grandparent->left : grandparent->right;
-      if(uncle == NULL || !uncle->red) {
-        if(grandparent->right != parent) {
-          if(parent->left != node) {
-            l_rotation(node);
-            parent = node;
-          }
-          r_rotation(parent);
-        }else {
-          if(parent->right != node) {
-            r_rotation(node);
-            parent = node;
-          }
-          l_rotation(parent);
-        }
-        parent->red = false;
-        node = parent;
-        root = node->parent != NULL ? root : node;
-      }else {
-        grandparent->red = grandparent->parent != NULL;
-        uncle->red = false;
-        parent->red = false;
-        node = grandparent;
-      }
-    }
-  }
-  return root;
-}
-
-void l_rotation(bucket_t* node)
-{
-  if(node->parent != NULL) {
-    bucket_t* parent = node->parent;
-    bucket_t* grandparent = parent->parent;
-    bucket_t* left = node->left;
-    node->parent = grandparent;
-    node->left = parent;
-    parent->right = left;
-    parent->parent = node;
-    if(left != NULL)
-      left->parent = parent;
-    if(grandparent != NULL) {
-      if(grandparent->left == parent)
-        grandparent->left = node;
-      else
-        grandparent->right = node;
-    }
-  }
-}
-
-void remove(bucket_t* node)
-{
-  node->parent = NULL;
-  node->right = NULL;
-  node->left = NULL;
-  remove(node->head);
-}
-
-void remove(page_t* node)
-{
-  while(node != NULL){
-    page_t* temp = node->next;
-    node->next = NULL;
-  }
 }
