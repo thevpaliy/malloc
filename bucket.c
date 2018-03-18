@@ -3,100 +3,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-void d_balance(bucket_t* root, bucket_t* node)
-{
-
-}
-
-void rb_delete(bucket_t* root, bucket_t* node)
-{
-
-}
-
-void transplant(bucket_t* root, bucket_t* x , bucket_t* y)
-{
-
-}
-
-void l_rotation(bucket_t* node)
-{
-  if(node->parent != NULL) {
-    bucket_t* parent = node->parent;
-    bucket_t* grandparent = parent->parent;
-    bucket_t* left = node->left;
-    node->parent = grandparent;
-    node->left = parent;
-    parent->right = left;
-    parent->parent = node;
-    if(left != NULL)
-      left->parent = parent;
-    if(grandparent != NULL) {
-      if(grandparent->left == parent)
-        grandparent->left = node;
-      else
-        grandparent->right = node;
-    }
-  }
-}
-
-void r_rotation(bucket_t* node)
-{
-  if(node->parent != NULL) {
-    bucket_t* parent = node->parent;
-    bucket_t* grandparent = parent->parent;
-    bucket_t* right = node->right;
-    parent->parent = node;
-    parent->left = right;
-    node->parent = grandparent;
-    node->right = parent;
-    if(right != NULL)
-      right->parent = parent;
-    if(grandparent != NULL) {
-      if(grandparent->left == parent)
-        grandparent->left = node;
-      else
-        grandparent->right = node;
-    }
-  }
-}
-
-bucket_t* i_balance(bucket_t* root, bucket_t* node)
-{
-  if(root != NULL) {
-    while(node->parent != NULL && node->parent->red) {
-      bucket_t* parent = node->parent;
-      bucket_t* grandparent = parent->parent->parent;
-      if(grandparent == NULL)
-        return root;
-      bucket_t* uncle = grandparent->left != parent
-              ? grandparent->left : grandparent->right;
-      if(uncle == NULL || !uncle->red) {
-        if(grandparent->right != parent) {
-          if(parent->left != node) {
-            l_rotation(node);
-            parent = node;
-          }
-          r_rotation(parent);
-        }else {
-          if(parent->right != node) {
-            r_rotation(node);
-            parent = node;
-          }
-          l_rotation(parent);
-        }
-        parent->red = false;
-        node = parent;
-        root = node->parent != NULL ? root : node;
-      }else {
-        grandparent->red = grandparent->parent != NULL;
-        uncle->red = false;
-        parent->red = false;
-        node = grandparent;
-      }
-    }
-  }
-  return root;
-}
+bucket_t* i_balance(bucket_t* root, bucket_t* node);
+bucket_t* d_balance(bucket_t* root, bucket_t* node);
+bucket_t* transplant(bucket_t* root, bucket_t* x, bucket_t* y);
+void l_rotation(bucket_t* node);
+void r_rotation(bucket_t* node);
 
 void p_remove(page_t* node)
 {
@@ -113,7 +24,6 @@ void b_remove(bucket_t* node)
   node->left = NULL;
   p_remove(node->head);
 }
-
 
 bucket_t* create(size_t size)
 {
@@ -207,6 +117,99 @@ bucket_t* remove(bucket_t* root, size_t size)
     root = root != target ? root : successor;
     b_remove(target);
     d_balance(root, target);
+  }
+  return root;
+}
+
+
+bucket_t* transplant(bucket_t* root, bucket_t* x , bucket_t* y)
+{
+  if(x->parent == NULL)
+    root = y;
+  else if(x->parent->left == x)
+    x->parent->left = y;
+  else
+    x->parent->right = y;
+  y->parent = x->parent;
+  return root;
+}
+
+void l_rotation(bucket_t* node)
+{
+  if(node->parent != NULL) {
+    bucket_t* parent = node->parent;
+    bucket_t* grandparent = parent->parent;
+    bucket_t* left = node->left;
+    node->parent = grandparent;
+    node->left = parent;
+    parent->right = left;
+    parent->parent = node;
+    if(left != NULL)
+      left->parent = parent;
+    if(grandparent != NULL) {
+      if(grandparent->left == parent)
+        grandparent->left = node;
+      else
+        grandparent->right = node;
+    }
+  }
+}
+
+void r_rotation(bucket_t* node)
+{
+  if(node->parent != NULL) {
+    bucket_t* parent = node->parent;
+    bucket_t* grandparent = parent->parent;
+    bucket_t* right = node->right;
+    parent->parent = node;
+    parent->left = right;
+    node->parent = grandparent;
+    node->right = parent;
+    if(right != NULL)
+      right->parent = parent;
+    if(grandparent != NULL) {
+      if(grandparent->left == parent)
+        grandparent->left = node;
+      else
+        grandparent->right = node;
+    }
+  }
+}
+
+bucket_t* i_balance(bucket_t* root, bucket_t* node)
+{
+  if(root != NULL) {
+    while(node->parent != NULL && node->parent->red) {
+      bucket_t* parent = node->parent;
+      bucket_t* grandparent = parent->parent->parent;
+      if(grandparent == NULL)
+        return root;
+      bucket_t* uncle = grandparent->left != parent
+              ? grandparent->left : grandparent->right;
+      if(uncle == NULL || !uncle->red) {
+        if(grandparent->right != parent) {
+          if(parent->left != node) {
+            l_rotation(node);
+            parent = node;
+          }
+          r_rotation(parent);
+        }else {
+          if(parent->right != node) {
+            r_rotation(node);
+            parent = node;
+          }
+          l_rotation(parent);
+        }
+        parent->red = false;
+        node = parent;
+        root = node->parent != NULL ? root : node;
+      }else {
+        grandparent->red = grandparent->parent != NULL;
+        uncle->red = false;
+        parent->red = false;
+        node = grandparent;
+      }
+    }
   }
   return root;
 }
