@@ -3,9 +3,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define LIMIT 32
+#define INITIAL_CAPACITY 10
+#define PAGE (x) (sizeof(page_t) + x)
+
 bucket_t* i_balance(bucket_t* root, bucket_t* node);
 bucket_t* d_balance(bucket_t* root, bucket_t* node);
 bucket_t* transplant(bucket_t* root, bucket_t* x, bucket_t* y);
+page_t*   create_page(size_t size);
 void l_rotation(bucket_t* node);
 void r_rotation(bucket_t* node);
 
@@ -27,13 +32,41 @@ void b_remove(bucket_t* node)
 
 bucket_t* create(size_t size)
 {
-  bucket_t* bucket = sbrk(sizeof(bucket_t));
+  bucket_t* bucket = sbrk(sizeof(bucket_t) + PAGE(size) * INITIAL_CAPACITY);
+  if(bucket == NULL) {
+    return NULL;
+  }
   bucket->parent = NULL;
   bucket->right = NULL;
   bucket->left = NULL;
+  bucket->occupied = NULL;
   bucket->size = size;
   bucket->red = true;
+  bucket->head = bucket + sizeof(bucket_t);
+  page_t* page = head;
+  for(int index = 1; index < INITIAL_CAPACITY; index++) {
+    page->next = NULL;
+    page->prev = NULL;
+    page->parent = bucket;
+    page_t* temp = bucket->head + PAGE(size) * index;
+    page->next = temp;
+    temp->prev = page;
+    page = temp;
+  }
+  page->parent = bucket;
+  page->next = NULL;
   return bucket;
+}
+
+page_t* create_page(size_t size)
+{
+    page_t* page = sbrk(PAGE(size));
+    if(page == NULL)
+      return NULL;
+    page->parent = NULL;
+    page->next = NULL;
+    page->prev = NULL;
+    return page;
 }
 
 bucket_t* add(bucket_t* root, bucket_t* target)
@@ -265,9 +298,49 @@ bucket_t* d_balance(bucket_t* root, bucket_t* node)
           temp->red = false;
           parent->color = true;
           l_rotation(temp);
-
         }
       }
     }
   }
+}
+
+bucket_t* remove(bucket_t* root, page_t* node)
+{
+  if(node != NULL) {
+    bucket_t* parent = node->parent;
+    if(parent != NULL) {
+      if(node->prev != NULL)
+        node->prev->next = node->next;
+      if(node->next != NULL)
+        node->next->prev = node->prev;
+      if(parent->occupied == node)
+        parent->occupied = node->next;
+      page_t* head = parent->head;
+      if(head != NULL)
+        head->prev = node;
+      node->next = head;
+      parent->head = node;
+      parent->count += 1;
+    }
+  }
+  return root;
+}
+
+page_t* get(bucket_t* bucket)
+{
+  if(bucket != NULL) {
+    page_t* page = bucket->head;
+    if(page == NULL) {
+      page = create_page(bucket->size);
+      if(page == NULL)
+        return NULL;
+    }
+    page_t* occupied = bucket->occupied;
+    if(occupied != NULL)
+      occupied->prev = page;
+    page->next = occupied;
+    bucket->occupied = page;
+    return page;
+  }
+  return NULL;
 }
