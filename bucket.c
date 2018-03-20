@@ -121,19 +121,6 @@ bucket_t* remove(bucket_t* root, size_t size)
   return root;
 }
 
-
-bucket_t* transplant(bucket_t* root, bucket_t* x , bucket_t* y)
-{
-  if(x->parent == NULL)
-    root = y;
-  else if(x->parent->left == x)
-    x->parent->left = y;
-  else
-    x->parent->right = y;
-  y->parent = x->parent;
-  return root;
-}
-
 void l_rotation(bucket_t* node)
 {
   if(node->parent != NULL) {
@@ -212,4 +199,75 @@ bucket_t* i_balance(bucket_t* root, bucket_t* node)
     }
   }
   return root;
+}
+
+bucket_t* transplant(bucket_t* root, bucket_t* x , bucket_t* y)
+{
+  if(x->parent == NULL)
+    root = y;
+  else if(x->parent->left == x)
+    x->parent->left = y;
+  else
+    x->parent->right = y;
+  y->parent = x->parent;
+  return root;
+}
+
+bucket_t* remove(bucket_t* root, size_t size)
+{
+  bucket_t* target = search(root, size);
+  if(target != NULL) {
+    bucket_t* node = target;
+    bucket_t* x = target->left;
+    bool color = node->red;
+    if(target->left == NULL) {
+      x = target->right;
+      root = transplant(root, target, target->right);
+    }else if(target->right == NULL) {
+      root = transplant(root, target, target->left);
+    }else {
+      node = min(node->right);
+      color = node->red;
+      x = node->right;
+      if(node->parent != target) {
+        node->parent->left = node->right;
+        if(node->right != NULL)
+          node->right->parent = node->parent;
+        node->right = target->right;
+        node->right->parent = node;
+      }
+      root = transplant(root, target, node);
+      node->left = target->left;
+      node->left->parent = node;
+      node->red = target->red;
+    }
+    b_remove(target);
+    if(!color) {
+      root = d_balance(root, x);
+    }
+  }
+  return root;
+}
+
+bool is_black(bucket_t* node)
+{
+  return node == NULL || !node->red;
+}
+
+bucket_t* d_balance(bucket_t* root, bucket_t* node)
+{
+  while(node != NULL && !node->red) {
+    bucket_t* parent = node->parent;
+    if(parent != NULL) {
+      if(parent->right != node){
+        bucket_t* temp = parent->right;
+        if(temp != NULL && temp->red) {
+          temp->red = false;
+          parent->color = true;
+          l_rotation(temp);
+
+        }
+      }
+    }
+  }
 }
