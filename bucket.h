@@ -1,8 +1,9 @@
 #ifndef __BUCKET_H__
 #define __BUCKET_H__
-#include<stdlib.h>
+#include <stdlib.h>
+
 typedef enum { false, true } bool;
-extern struct bucket;
+
 typedef struct page
 {
   struct bucket* parent;
@@ -28,4 +29,5 @@ extern bucket_t* remove(bucket_t* root, size_t size);
 extern bucket_t* add(bucket_t* root, bucket_t* target);
 extern bucket_t* remove(page_t* node);
 extern page_t*   get(bucket_t* node);
+
 #endif
